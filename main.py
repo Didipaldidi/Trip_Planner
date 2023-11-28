@@ -1,6 +1,28 @@
 from typing import Dict
 from ortools.constraint_solver import pywrapcp
 from ortools.constraint_solver import routing_enums_pb2
+GOOGLE_MAPS_API_KEY = "AIzaSyDlDzM_4vM_1tBMuHmB-0Qnba73nVzLlrM"
+import requests
+import creds
+
+class GoogleMapsAPI:
+    def __init__(self, api_key):
+        self.api_key = api_key
+
+    def get_distance_matrix(self, origins, destinations, mode, departure_time):
+        base_url = "https://maps.googleapis.com/maps/api/distancematrix/json"
+        params = {
+            "origins": "|".join(origins),
+            "destinations": "|".join(destinations),
+            "mode": mode,
+            "departure_time": departure_time,
+            "key": self.api_key,
+        }
+
+        response = requests.get(base_url, params=params)
+        result = response.json()
+        return result
+
 
 class RouteOptimizer:
     def optimize_route(self) -> Dict[str, any]:
@@ -8,7 +30,7 @@ class RouteOptimizer:
         Optimizes the travel route using the Travelling Salesman Problem approach.
         :return: A dictionary containing the optimized route.
         """
-
+        self.google_maps_api = GoogleMapsAPI(api_key=creds.GOOGLE_MAPS_API_KEY)
         distance_matrix = self.google_maps_api.get_distance_matrix(self.destinations, self.transportation_mode, self.departure_time)
 
         # Check for any origin with ZERO_RESULTS for all routes
