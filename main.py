@@ -4,6 +4,8 @@ from ortools.constraint_solver import routing_enums_pb2
 GOOGLE_MAPS_API_KEY = "AIzaSyDlDzM_4vM_1tBMuHmB-0Qnba73nVzLlrM"
 import requests
 import creds
+from sklearn.mixture import GaussianMixture
+import numpy as np
 
 class GoogleMapsAPI:
     def __init__(self, api_key):
@@ -83,3 +85,35 @@ class RouteOptimizer:
                 )
 
         return {"route": route, "travel_times": travel_times}
+    
+    def cluster_destination_gmm(self, n_clusters):
+        """
+        Cluster the given destinations using Gaussian Mixture Model.
+        :param n_clusters: Number of clusters to form.
+        :return: Cluster labels for each destination.
+        """
+        # Convert destination names to lat-lon coordinates
+        destinations_coords = []
+        for destination in self.destinations:
+            lat_lng = self.google_maps_api.get_lat_lng(destination)
+            lat_lng["lon"] = lat_lng.pop("lng")
+
+        # Extract latidues and longitudes from the coordinates
+        data = np.array([d["lat"], d["lon"]] for d in destinations_coords)
+
+        # Create a Gaussion Mixture Model with the specified number of components(cluster)
+        gmm = GaussianMixture(n_components=n_clusters,
+                              init_params="k-means++",
+                              covariance_type="full",
+                              reg_covar=1e-06,
+                              random_state=0,
+                              )
+        
+        # Fit the GMM to the data
+        gmm.fit(data)
+
+        # Predict the cluster for each destination
+        labels = gmm.predict(data)
+
+        return labels
+
